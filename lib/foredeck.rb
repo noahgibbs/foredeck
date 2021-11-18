@@ -99,7 +99,7 @@ class Foredeck::Universe
                     star_y = @stars[star_sym][:y]
                     x_dist = star_x - x
                     y_dist = star_y - y
-                    dist = Math.sqrt(x_dist * x_dist + y_dist * y_dist)
+                    dist = Math.sqrt(x_dist.to_f * x_dist + y_dist.to_f * y_dist)
                     if dist < @min_star_dist
                         return nil
                     end
@@ -120,36 +120,42 @@ class Foredeck::Universe
     #
     # This instead of uniform random distance accounts for the circle getting bigger as you go outward.
     def try_add_new_stars_in_ring(from_star:, min_dist:, max_dist:, max_tries:, max_stars:)
+        raise "Bad star name #{from_star.inspect}!" unless @stars[from_star]
+
         center_x = @stars[from_star][:x]
-        center_y = @stars[from_star][:x]
+        center_y = @stars[from_star][:y]
         two_pi = Math::PI * 2.0
-        stars_added = 0
+        stars_added = []
 
         max_tries.times do
             theta = @rand.rand(two_pi)
             dist = Math.sqrt(@rand.rand * (max_dist * max_dist - min_dist * min_dist) + min_dist * min_dist)
-            x = Math.sin(theta) * dist + center_x
-            y = Math.cos(theta) * dist + center_y
+            x = (Math.sin(theta) * dist + center_x).to_i
+            y = (Math.cos(theta) * dist + center_y).to_i
 
+            if x < 0 || y < 0 || x >= @width || y >= @height
+                # Bad location, skip
+                next
+            end
             res = try_add_new_star_at_point(x: x, y: y)
-            if res
-                stars_added += 1
-            end
-            if stars_added >= max_stars
-                return true
-            end
+            stars_added.push(res) if res
+
+            # Done, return
+            return stars_added if stars_added.size >= max_stars
         end
 
-        if stars_added > 0
-            true
-        else
-            false
-        end
+        #STDERR.puts "Tried #{max_tries} times from #{from_star.inspect} (#{@stars[from_star][:x]}, #{@stars[from_star][:y]}), added [#{stars_added.map { |star| "#{star} (#{@stars[star][:x]}, #{@stars[star][:y]})" }.join(", ")}]"
+        return nil if stars_added.empty?
+        stars_added
     end
 
     def add_new_star(name_sym:, x:, y:)
         sector_x = (x / @sector_width).to_i
         sector_y = (y / @sector_height).to_i
+
+        if sector_x < 0 || sector_y < 0 || sector_x >= @sectors_wide || sector_y >= @sectors_high
+            raise "Trying to add star #{name_sym.inspect} at bad coordinate #{x.inspect}, #{y.inspect}!"
+        end
 
         @stars[name_sym] = {
             symbol: name_sym,
@@ -164,20 +170,30 @@ class Foredeck::Universe
 
     # Calculate galaxy shape for a flat box-shape galaxy with poisson-distant stars, fully connected
     def gen_flat_galaxy
-        retries = 0
+        first_stars = (1..5).map { try_add_new_star_blindly }.compact
+        raise "Error! Couldn't even add the very first star!" if first_stars.empty?
+
+        starting_points = first_stars
+
         loop do
-            success = try_add_new_star_blindly
-            if success
-                retries = 0
-            else
-                retries += 1
-                if retries > 10
-                    puts "Too many retries on star ##{@total_stars + 1}. Failing!"
-                    break
-                end
+            break if starting_points.empty?
+            star = starting_points.shift
+
+            added = try_add_new_stars_in_ring(
+                from_star: star,
+                min_dist: @min_star_dist + 0.05,
+                max_dist: @max_star_conn_dist,
+                max_tries: 20,
+                max_stars: [7, @max_stars - @total_stars].min)
+
+            if added
+                starting_points.concat(added)
             end
 
-            break if total_stars >= @min_stars
+            if @total_stars >= @max_stars
+                #STDERR.puts "Hit #{@total_stars} stars, breaking"
+                break
+            end
         end
 
         nil
