@@ -91,29 +91,19 @@ class Foredeck::Universe
         min_sector_y = [star_sector_y - 1, 0].max
         max_sector_y = [star_sector_y + 1, @sectors_high - 1].min
 
-        #(min_sector_x...max_sector_x).each do |sector_x|
-        #    (min_sector_y...max_sector_y).each do |sector_y|
-        #        @sectors[sector_x][sector_y].each do |star_sym|
-        #            star_x = @stars[star_sym][:x]
-        #            star_y = @stars[star_sym][:y]
-        #            x_dist = star_x - new_star_x
-        #            y_dist = star_y - new_star_y
-        #            dist = Math.sqrt(x_dist * x_dist + y_dist * y_dist)
-        #            if dist < @min_star_dist
-        #                return nil
-        #            end
-        #        end
-        #    end
-        #end
-        @stars.each do |name, star|
-            star_x = star[:x]
-            star_y = star[:y]
-
-            x_dist = star_x - x
-            y_dist = star_y - y
-            dist = Math.sqrt(x_dist * x_dist + y_dist * y_dist)
-            if dist < @min_star_dist
-                return nil
+        sector_says_no = false
+        (min_sector_x..max_sector_x).each do |sector_x|
+            (min_sector_y..max_sector_y).each do |sector_y|
+                @sectors[sector_x][sector_y].each do |star_sym|
+                    star_x = @stars[star_sym][:x]
+                    star_y = @stars[star_sym][:y]
+                    x_dist = star_x - x
+                    y_dist = star_y - y
+                    dist = Math.sqrt(x_dist * x_dist + y_dist * y_dist)
+                    if dist < @min_star_dist
+                        return nil
+                    end
+                end
             end
         end
 

@@ -14,6 +14,7 @@ uni = Foredeck::Universe.new(rand: randomizer)
 width = uni.width
 height = uni.height
 
+# Print out text star map
 galaxy = (0..(height-1)).map { " " * width }
 uni.stars.each do |star_sym, star|
     galaxy[star[:x]][star[:y]] = "*"
