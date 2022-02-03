@@ -187,9 +187,3 @@ class Foredeck::Universe
     end
 
 end
-
-class Foredeck::UniverseAwareness
-    def initialize(universe)
-        @universe = universe
-    end
-end

@@ -7,8 +7,8 @@ $LOAD_PATH << "#{__dir__}/lib"
 require "foredeck"
 require "json"
 
-#randomizer = Random.new(Time.now.to_i)
-randomizer = Random.new(1637233196)
+randomizer = Random.new(Time.now.to_i)
+#randomizer = Random.new(1637233196)
 
 uni = Foredeck::Universe.new(rand: randomizer)
 width = uni.width
